@@ -13,5 +13,5 @@ public class BoardAndUserDTO {
 
     private String title;
     private String contents;
-    private String email;
+    private String writer;
 }

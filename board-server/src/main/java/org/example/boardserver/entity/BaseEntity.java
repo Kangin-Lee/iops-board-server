@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 public class BaseEntity {
     @CreationTimestamp
     @Column(updatable = false)
+    @JsonFormat(pattern = "MM-dd HH:mm")
     private LocalDateTime createdTime;
 
     @UpdateTimestamp

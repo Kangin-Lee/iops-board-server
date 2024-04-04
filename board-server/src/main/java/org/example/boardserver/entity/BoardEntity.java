@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.xml.stream.events.Comment;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -22,8 +25,6 @@ public class BoardEntity extends BaseEntity{
     @Column(length = 500, nullable = false)
     private String contents;
 
-//    @Column(length = 20, nullable = false)
-//    private String writer;
 
     @Column(columnDefinition = "int default 0")
     private int count;
@@ -32,4 +33,14 @@ public class BoardEntity extends BaseEntity{
     @JoinColumn(name="email", referencedColumnName = "email", nullable = false)
     private UserEntity userEntity;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "boardEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<CommentEntity> commentList;
+
+    public void addComment(CommentEntity comment){
+        if(commentList==null){
+            commentList = new ArrayList<>();
+        }
+
+        commentList.add(comment);
+    }
 }

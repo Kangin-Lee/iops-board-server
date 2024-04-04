@@ -1,5 +1,6 @@
 package org.example.boardserver.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import org.example.boardserver.entity.BoardEntity;
 
@@ -16,7 +17,11 @@ public class BoardDTO {
     private String title;
     private String email;
     private String contents;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime createDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime updateTime;
     private int count;
 
@@ -25,12 +30,11 @@ public class BoardDTO {
         BoardDTO boardDTO = new BoardDTO();
         boardDTO.setId(boardEntity.getId());
         boardDTO.setTitle(boardEntity.getTitle());
-//        boardDTO.setWriter(boardEntity.getWriter());
-        boardDTO.setEmail(boardEntity.getUserEntity().getEmail());
         boardDTO.setCreateDate(boardEntity.getCreatedTime());
         boardDTO.setUpdateTime(boardEntity.getUpdatedTime());
         boardDTO.setCount(boardEntity.getCount());
         boardDTO.setContents(boardEntity.getContents());
+        boardDTO.setEmail(boardEntity.getUserEntity().getEmail());
 
         return boardDTO;
     }

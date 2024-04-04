@@ -1,20 +1,23 @@
 package org.example.boardserver.controller;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.User;
 import org.example.boardserver.dto.BoardAndUserDTO;
 import org.example.boardserver.dto.BoardDTO;
-import org.example.boardserver.dto.ComentDTO;
+import org.example.boardserver.dto.CommentDTO;
 import org.example.boardserver.dto.UserDTO;
 import org.example.boardserver.service.BoardService;
-import org.example.boardserver.service.ComentService;
+import org.example.boardserver.service.CommentService;
 import org.example.boardserver.service.UserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -22,14 +25,15 @@ import java.util.List;
 public class BoardController {
     private final BoardService boardService;
     private final UserService userService;
-    private final ComentService comentService;
+    private final CommentService commentService;
 
 //    게시판 리스트  ------------------------------------------------------------------------
     @GetMapping("/board")
-    public ResponseEntity<List<BoardDTO>> findAll(){
+    public ResponseEntity<Page<BoardDTO>> findAll(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size){
         Sort sort = Sort.by(Sort.Direction.DESC,"id");
-        List<BoardDTO> boardDTOList = boardService.getAllBoardData(sort);
-        return ResponseEntity.ok(boardDTOList);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<BoardDTO> boardPage = boardService.getAllBoardData(pageable);
+        return ResponseEntity.ok(boardPage);
     }
 
     //회원가입--------------------------------------------------------------------------------
@@ -65,6 +69,30 @@ public class BoardController {
 
     }
 
+    //댓글 삭제
+    @DeleteMapping("comment/{id}")
+    public ResponseEntity<String> deleteComment(@PathVariable Long id){
+        try{
+            commentService.deleteComment(id);
+            return  ResponseEntity.ok("삭제");
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("댓글 삭제 중 오류 발생");
+        }
+    }
+
+    // 댓글 수정
+    @PutMapping("update/comment/{id}")
+    public ResponseEntity<String> updateComment(@PathVariable Long id, @RequestBody CommentDTO commentDTO){
+//        try{
+//            commentService.updateComment(id, commentDTO);
+//            return ResponseEntity.ok("수정");
+//        }catch (Exception e){
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("댓글 수정 중 오류 발생");
+//        }
+            commentService.updateComment(id, commentDTO);
+            return ResponseEntity.ok("수정");
+    }
+
     //로그인---------------------------------------------------------------------------------
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody UserDTO userDTO){
@@ -86,26 +114,46 @@ public class BoardController {
 
     //게시물 작성---------------------------------------------------------------------------------
     @PostMapping("/create")
-    public ResponseEntity<String> createContents(@RequestBody BoardDTO boardDTO){
+    public ResponseEntity<String> createContents(@RequestBody BoardAndUserDTO boardAndUserDTO){
 
-        boardService.saveContents(boardDTO);
+        String title = boardAndUserDTO.getTitle();
+        String contents = boardAndUserDTO.getContents();
+        String email = boardAndUserDTO.getWriter();
 
-        return new ResponseEntity<>("글작성 완료",HttpStatus.CREATED);
+        // 여기서 필요한 로직을 수행하고 적절한 응답을 반환합니다.
+        if (title == null || contents == null || title.isEmpty() || contents.isEmpty()) {
+            return ResponseEntity.badRequest().body("제목 혹은 내용을 입력해 주세요.");
+        }
+
+        boardService.saveContents(boardAndUserDTO);
+
+        // 정상적으로 처리되었을 때의 응답
+        return ResponseEntity.status(HttpStatus.CREATED).body("글이 정상적으로 작성되었습니다.");
     }
 
-    //로그인한 유저 정보 가져오기
-//    @GetMapping("/user-info")
-//    public ResponseEntity<UserDTO> userInfo(){
-//        UserDTO userDTO = userService.getLoginUserInfo();
-//        return ResponseEntity.ok(userDTO);
-//    }
 
     // 댓글 작성------------------------------------------------------------------------------
-    @PostMapping("/comment/{id}")
-    public ResponseEntity<String> coment(@PathVariable Long id, @RequestBody ComentDTO comentDTO){
-        BoardDTO boardDTO = boardService.findById(id);
-        comentService.saveComent(comentDTO);
+    @PostMapping("board/{id}/comments")
+    public ResponseEntity<String> comment(@PathVariable Long id, @RequestBody CommentDTO commentDTO){
+        commentService.createdComment(id, commentDTO);
 
-        return new ResponseEntity<>("댓글 작성 완료", HttpStatus.CREATED);
+        return ResponseEntity.ok("success");
     }
+
+    //댓글 가져오기
+    @GetMapping("board/{id}/comments")
+    public ResponseEntity<List<CommentDTO>> commentsFindAll(@PathVariable Long id){
+        Sort sort = Sort.by(Sort.Direction.DESC,"id");
+        List<CommentDTO> commentDTOList = commentService.getAllCommentsData(id, sort);
+
+        return ResponseEntity.ok(commentDTOList);
+    }
+
+    //수정한 댓글 가져오기
+//    @GetMapping("board/{id}/comment")
+//    public ResponseEntity<CommentDTO> getCommentById(@PathVariable Long id){
+//        CommentDTO commentDTO = commentService.findById(id);
+//        return  ResponseEntity.ok(commentDTO);
+//    }
+
 }
